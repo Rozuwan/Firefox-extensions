@@ -4,55 +4,57 @@
   "version": "1.0.0",
   "description": "Stay focused on YouTube — hide Shorts, recommendations, comments, and the homepage feed.",
   "author": "YouTube Focus Mode",
-
   "icons": {
     "16": "icons/icon16.svg",
     "32": "icons/icon32.svg",
     "48": "icons/icon48.svg",
     "128": "icons/icon128.svg"
   },
-
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.svg",
       "32": "icons/icon32.svg",
-      "48": "icons/icon48.svg",
-      "128": "icons/icon128.svg"
+      "48": "icons/icon48.svg"
     },
     "default_title": "YouTube Focus Mode"
   },
-
   "permissions": [
     "storage"
   ],
-
   "host_permissions": [
     "https://www.youtube.com/*",
     "https://youtube.com/*"
   ],
-
   "content_scripts": [
     {
       "matches": [
         "https://www.youtube.com/*",
         "https://youtube.com/*"
       ],
-      "js": ["content.js"],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start",
       "all_frames": false
     }
   ],
-
   "background": {
-    "scripts": ["background.js"],
+    "scripts": [
+      "background.js"
+    ],
     "type": "module"
   },
-
   "browser_specific_settings": {
     "gecko": {
-      "id": "youtube-focus-mode@extension",
-      "strict_min_version": "109.0"
+      "id": "ytfocus@roxu.dev",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ],
+        "optional": []
+      }
     }
   }
 }
