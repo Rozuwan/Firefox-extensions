@@ -12,53 +12,44 @@ const ACCENT        = "#1D9E75";
 const ACCENT_DIM    = "#155c44";
 const GRID_COLOR    = "#1e2330";
 const BG_COLOR      = "#0f1117";
-const TAB_LIMIT     = 4;    // how many recent tabs to show
+const TAB_LIMIT     = 6;    // how many recent tabs to show
 
 // ─── State ────────────────────────────────────────────────────────────────────
-let memorySamples = new Array(MAX_SAMPLES).fill(null);
-let peakMemoryMB  = 0;
-let updateTimer   = null;
+let tabCountSamples = new Array(MAX_SAMPLES).fill(null);
+let peakTabCount    = 0;
+let updateTimer     = null;
 
 // ─── DOM References ───────────────────────────────────────────────────────────
-const metricCurrent  = document.getElementById("metricCurrent");
-const metricPeak     = document.getElementById("metricPeak");
-const metricTabs     = document.getElementById("metricTabs");
-const graphScale     = document.getElementById("graphScale");
-const canvas         = document.getElementById("memoryGraph");
-const ctx            = canvas.getContext("2d");
-const tabList        = document.getElementById("tabList");
-const btnSleep       = document.getElementById("btnSleep");
+const metricCurrent   = document.getElementById("metricCurrent");
+const metricPeak      = document.getElementById("metricPeak");
+const metricSleeping = document.getElementById("metricSleeping");
+const graphScale      = document.getElementById("graphScale");
+const canvas          = document.getElementById("memoryGraph");
+const ctx             = canvas.getContext("2d");
+const tabList         = document.getElementById("tabList");
+const tabCountBadge   = document.getElementById("tabCountBadge");
+const btnSleep        = document.getElementById("btnSleep");
 const autoSleepToggle = document.getElementById("autoSleepToggle");
-const sleepTimer     = document.getElementById("sleepTimer");
-const timerValue     = document.getElementById("timerValue");
-const sliderRow      = document.getElementById("sliderRow");
+const sleepTimer      = document.getElementById("sleepTimer");
+const timerValue      = document.getElementById("timerValue");
+const sliderRow       = document.getElementById("sliderRow");
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 /**
- * Returns JS heap size in MB, or null if the API is unavailable.
- * performance.memory is available in Chromium-based contexts; in Firefox
- * background/popup contexts it may not exist, so we gracefully fall back.
+ * Get current tab count — works in Firefox.
+ * Returns { total, active, sleeping } counts.
  */
-function getHeapMB() {
-  if (
-    typeof performance !== "undefined" &&
-    performance.memory &&
-    typeof performance.memory.usedJSHeapSize === "number"
-  ) {
-    return performance.memory.usedJSHeapSize / (1024 * 1024);
+async function getTabCounts() {
+  try {
+    const tabs = await browser.tabs.query({});
+    const total = tabs.length;
+    const active = tabs.filter(t => t.active).length;
+    const sleeping = tabs.filter(t => t.discarded).length;
+    return { total, active, sleeping };
+  } catch (e) {
+    return { total: 0, active: 0, sleeping: 0 };
   }
-  return null;
-}
-
-function roundTo(val, decimals) {
-  const factor = Math.pow(10, decimals);
-  return Math.round(val * factor) / factor;
-}
-
-function formatMB(mb) {
-  if (mb === null || mb === undefined) return "—";
-  return roundTo(mb, 1).toString();
 }
 
 function truncate(str, max) {
@@ -90,9 +81,8 @@ function drawGraph() {
   }
 
   // Filter valid samples
-  const validSamples = memorySamples.filter(v => v !== null);
+  const validSamples = tabCountSamples.filter(v => v !== null);
   if (validSamples.length === 0) {
-    // No data yet — draw "no data" label
     ctx.fillStyle = "#3a4258";
     ctx.font = "11px system-ui, sans-serif";
     ctx.textAlign = "center";
@@ -101,12 +91,12 @@ function drawGraph() {
   }
 
   // Scale
-  const maxVal = Math.max(...validSamples, 10); // at least 10 MB scale
+  const maxVal = Math.max(...validSamples, 5);
   const minVal = 0;
   const range  = maxVal - minVal || 1;
 
   // Update scale label
-  graphScale.textContent = formatMB(maxVal) + " MB";
+  graphScale.textContent = maxVal + " tabs";
 
   // Map value → canvas Y (inverted: 0 = bottom)
   function toY(val) {
@@ -121,17 +111,15 @@ function drawGraph() {
   // Draw fill under the line
   ctx.beginPath();
   let started = false;
-  let firstX = 0;
 
   for (let i = 0; i < MAX_SAMPLES; i++) {
-    const v = memorySamples[i];
+    const v = tabCountSamples[i];
     if (v === null) continue;
     const x = toX(i);
     const y = toY(v);
     if (!started) {
       ctx.moveTo(x, H);
       ctx.lineTo(x, y);
-      firstX = x;
       started = true;
     } else {
       ctx.lineTo(x, y);
@@ -140,7 +128,7 @@ function drawGraph() {
   if (started) {
     ctx.lineTo(toX(MAX_SAMPLES - 1), H);
     ctx.closePath();
-    ctx.fillStyle = ACCENT_DIM + "44"; // semi-transparent fill
+    ctx.fillStyle = ACCENT_DIM + "44";
     ctx.fill();
   }
 
@@ -148,7 +136,7 @@ function drawGraph() {
   ctx.beginPath();
   started = false;
   for (let i = 0; i < MAX_SAMPLES; i++) {
-    const v = memorySamples[i];
+    const v = tabCountSamples[i];
     if (v === null) continue;
     const x = toX(i);
     const y = toY(v);
@@ -166,13 +154,13 @@ function drawGraph() {
   ctx.stroke();
 
   // Draw dot at latest data point
-  const lastIdx = memorySamples.reduceRight((found, v, i) => {
+  const lastIdx = tabCountSamples.reduceRight((found, v, i) => {
     return found === -1 && v !== null ? i : found;
   }, -1);
 
   if (lastIdx !== -1) {
     const dotX = toX(lastIdx);
-    const dotY = toY(memorySamples[lastIdx]);
+    const dotY = toY(tabCountSamples[lastIdx]);
     ctx.beginPath();
     ctx.arc(dotX, dotY, 3, 0, Math.PI * 2);
     ctx.fillStyle = ACCENT;
@@ -191,6 +179,9 @@ async function renderTabList() {
     return;
   }
 
+  // Update tab count badge
+  tabCountBadge.textContent = tabs.length + " tabs";
+
   // Sort: active tab first, then by lastAccessed desc
   tabs.sort((a, b) => {
     if (a.active && !b.active) return -1;
@@ -207,6 +198,12 @@ async function renderTabList() {
     li.className = "tab-item";
     li.setAttribute("role", "listitem");
 
+    // Make clickable to activate tab
+    li.addEventListener("click", () => {
+      browser.tabs.update(tab.id, { active: true });
+      window.close();
+    });
+
     // Favicon
     let faviconEl;
     if (tab.favIconUrl && !tab.favIconUrl.startsWith("chrome://")) {
@@ -221,11 +218,28 @@ async function renderTabList() {
       faviconEl = makeFallbackFavicon();
     }
 
+    // Info container
+    const infoEl = document.createElement("div");
+    infoEl.className = "tab-info";
+
     // Name
     const nameEl = document.createElement("span");
     nameEl.className = "tab-name";
-    nameEl.textContent = truncate(tab.title, 30);
+    nameEl.textContent = truncate(tab.title, 35);
     nameEl.title = tab.title || "";
+
+    // URL
+    const urlEl = document.createElement("span");
+    urlEl.className = "tab-url";
+    try {
+      const url = new URL(tab.url);
+      urlEl.textContent = url.hostname;
+    } catch {
+      urlEl.textContent = tab.url || "";
+    }
+
+    infoEl.appendChild(nameEl);
+    infoEl.appendChild(urlEl);
 
     // Badge
     const badgeEl = document.createElement("span");
@@ -238,18 +252,15 @@ async function renderTabList() {
       badgeEl.className = "tab-badge sleeping";
       badgeEl.textContent = "sleeping";
     } else {
-      badgeEl.className = "tab-badge sleeping";
+      badgeEl.className = "tab-badge idle";
       badgeEl.textContent = "idle";
     }
 
     li.appendChild(faviconEl);
-    li.appendChild(nameEl);
+    li.appendChild(infoEl);
     li.appendChild(badgeEl);
     tabList.appendChild(li);
   }
-
-  // Update tab count metric
-  metricTabs.textContent = tabs.length.toString();
 }
 
 function makeFallbackFavicon() {
@@ -265,20 +276,16 @@ function makeFallbackFavicon() {
 // ─── Update Loop ──────────────────────────────────────────────────────────────
 
 async function update() {
-  // Memory
-  const mb = getHeapMB();
-  memorySamples.shift();
-  memorySamples.push(mb);
+  // Tab counts
+  const counts = await getTabCounts();
+  tabCountSamples.shift();
+  tabCountSamples.push(counts.total);
 
-  if (mb !== null) {
-    if (mb > peakMemoryMB) peakMemoryMB = mb;
-    metricCurrent.textContent = formatMB(mb);
-    metricPeak.textContent    = formatMB(peakMemoryMB);
-  } else {
-    // Memory API unavailable in this context — show N/A but keep graph
-    metricCurrent.textContent = "N/A";
-    metricPeak.textContent    = "N/A";
-  }
+  if (counts.total > peakTabCount) peakTabCount = counts.total;
+
+  metricCurrent.textContent = counts.total;
+  metricPeak.textContent    = peakTabCount;
+  metricSleeping.textContent = counts.sleeping;
 
   drawGraph();
   await renderTabList();
@@ -288,7 +295,9 @@ async function update() {
 
 async function sleepInactiveTabs() {
   btnSleep.disabled = true;
-  btnSleep.textContent = "Sleeping…";
+  btnSleep.innerHTML = `<svg width="16" height="16" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M11.5 7.5C11.5 10.2614 9.26142 12.5 6.5 12.5C3.73858 12.5 1.5 10.2614 1.5 7.5C1.5 4.73858 3.73858 2.5 6.5 2.5C7.17 2.5 7.81 2.63 8.4 2.87C7.22 3.63 6.5 4.98 6.5 6.5C6.5 8.71 8.29 10.5 10.5 10.5C10.85 10.5 11.19 10.45 11.5 10.36V7.5Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg> Sleeping…`;
 
   try {
     const tabs = await browser.tabs.query({ active: false, discarded: false });
@@ -297,24 +306,28 @@ async function sleepInactiveTabs() {
     });
     await Promise.all(promises);
 
-    btnSleep.textContent = `✓ Slept ${tabs.length} tab${tabs.length !== 1 ? "s" : ""}`;
-    btnSleep.classList.add("sleeping-done");
-    await renderTabList();
+    btnSleep.innerHTML = `<svg width="16" height="16" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9 2L5 6L9 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg> Slept ${tabs.length} tab${tabs.length !== 1 ? "s" : ""}`;
+    btnSleep.classList.add("success");
+    await update();
 
     setTimeout(() => {
       btnSleep.disabled = false;
-      btnSleep.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      btnSleep.innerHTML = `<svg width="16" height="16" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M11.5 7.5C11.5 10.2614 9.26142 12.5 6.5 12.5C3.73858 12.5 1.5 10.2614 1.5 7.5C1.5 4.73858 3.73858 2.5 6.5 2.5C7.17 2.5 7.81 2.63 8.4 2.87C7.22 3.63 6.5 4.98 6.5 6.5C6.5 8.71 8.29 10.5 10.5 10.5C10.85 10.5 11.19 10.45 11.5 10.36V7.5Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg> Sleep Inactive Tabs`;
-      btnSleep.classList.remove("sleeping-done");
+      btnSleep.classList.remove("success");
     }, 2500);
   } catch (e) {
     btnSleep.disabled = false;
-    btnSleep.textContent = "Error — try again";
+    btnSleep.innerHTML = `<svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+      <path d="M11.5 7.5C11.5 10.2614 9.26142 12.5 6.5 12.5C3.73858 12.5 1.5 10.2614 1.5 7.5C1.5 4.73858 3.73858 2.5 6.5 2.5C7.17 2.5 7.81 2.63 8.4 2.87C7.22 3.63 6.5 4.98 6.5 6.5C6.5 8.71 8.29 10.5 10.5 10.5C10.85 10.5 11.19 10.45 11.5 10.36V7.5Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg> Error — try again`;
     setTimeout(() => {
-      btnSleep.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <path d="M11.5 7.5C11.5 10.2614 9.26142 12.5 6.5 12.5C3.73858 12.5 1.5 10.2614 1.5 7.5C1.5 4.73858 3.73858 2.5 6.5 2.5C7.17 2.5 7.81 2.63 8.4 2.87C7.22 3.63 6.5 4.98 6.5 6.5C6.5 8.71 8.29 10.5 10.5 10.5C10.85 10.5 11.19 10.45 11.5 10.36V7.5Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg> Sleep Inactive Tabs`;
+      btnSleep.innerHTML = `<svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+      <path d="M11.5 7.5C11.5 10.2614 9.26142 12.5 6.5 12.5C3.73858 12.5 1.5 10.2614 1.5 7.5C1.5 4.73858 3.73858 2.5 6.5 2.5C7.17 2.5 7.81 2.63 8.4 2.87C7.22 3.63 6.5 4.98 6.5 6.5C6.5 8.71 8.29 10.5 10.5 10.5C10.85 10.5 11.19 10.45 11.5 10.36V7.5Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg> Sleep Inactive Tabs`;
     }, 2000);
   }
 }

@@ -13,42 +13,46 @@
     <header class="header">
       <div class="header-icon">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="1" y="1" width="16" height="12" rx="1.5" stroke="#1D9E75" stroke-width="1.5"/>
-          <path d="M6 9 L8 6 L10 8 L12 4 L14 7" stroke="#1D9E75" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <rect x="7" y="13" width="4" height="2" fill="#1D9E75" rx="0.5"/>
-          <rect x="5" y="15" width="8" height="1" fill="#1D9E75" rx="0.5"/>
+          <rect x="1" y="1" width="16" height="12" rx="1.5" stroke="white" stroke-width="1.5"/>
+          <path d="M6 9 L8 6 L10 8 L12 4 L14 7" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <rect x="7" y="13" width="4" height="2" fill="white" rx="0.5"/>
+          <rect x="5" y="15" width="8" height="1" fill="white" rx="0.5"/>
         </svg>
       </div>
       <h1 class="header-title">Tab Memory Monitor</h1>
-      <div class="header-pulse" id="statusDot" title="Monitoring active"></div>
+      <div class="header-status">
+        <span class="status-dot"></span>
+        <span>Live</span>
+      </div>
     </header>
 
     <!-- Metric Cards -->
-    <section class="metrics" aria-label="Memory metrics">
+    <section class="metrics" aria-label="Tab count metrics">
       <div class="metric-card" id="cardCurrent">
         <span class="metric-label">Current</span>
         <span class="metric-value" id="metricCurrent">—</span>
-        <span class="metric-unit">MB</span>
+        <span class="metric-unit">tabs</span>
       </div>
       <div class="metric-card" id="cardPeak">
         <span class="metric-label">Peak</span>
         <span class="metric-value" id="metricPeak">—</span>
-        <span class="metric-unit">MB</span>
+        <span class="metric-unit">tabs</span>
+        <span class="metric-sub">session</span>
       </div>
-      <div class="metric-card" id="cardTabs">
-        <span class="metric-label">Tabs Open</span>
-        <span class="metric-value" id="metricTabs">—</span>
+      <div class="metric-card" id="cardSleeping">
+        <span class="metric-label">Sleeping</span>
+        <span class="metric-value" id="metricSleeping">—</span>
         <span class="metric-unit">tabs</span>
       </div>
     </section>
 
-    <!-- Memory Graph -->
-    <section class="graph-section" aria-label="Memory usage graph">
+    <!-- Tab Count Graph -->
+    <section class="graph-section" aria-label="Tab count graph">
       <div class="graph-header">
-        <span class="graph-title">JS Heap (last 60s)</span>
-        <span class="graph-scale" id="graphScale">0 MB</span>
+        <span class="graph-title">Tabs Over Time</span>
+        <span class="graph-scale" id="graphScale">0 tabs</span>
       </div>
-      <canvas id="memoryGraph" width="296" height="90" aria-label="Memory usage line graph"></canvas>
+      <canvas id="memoryGraph" width="296" height="80" aria-label="Tab count line graph"></canvas>
       <div class="graph-axis">
         <span>60s ago</span>
         <span>now</span>
@@ -59,6 +63,7 @@
     <section class="tabs-section" aria-label="Recent tabs">
       <div class="section-header">
         <span class="section-title">Recent Tabs</span>
+        <span class="tab-count-badge" id="tabCountBadge">0</span>
       </div>
       <ul class="tab-list" id="tabList" role="list">
         <li class="tab-item tab-placeholder">Loading tabs…</li>
@@ -68,7 +73,7 @@
     <!-- Sleep Button -->
     <div class="action-row">
       <button class="btn-sleep" id="btnSleep" type="button">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="16" height="16" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M11.5 7.5C11.5 10.2614 9.26142 12.5 6.5 12.5C3.73858 12.5 1.5 10.2614 1.5 7.5C1.5 4.73858 3.73858 2.5 6.5 2.5C7.17 2.5 7.81 2.63 8.4 2.87C7.22 3.63 6.5 4.98 6.5 6.5C6.5 8.71 8.29 10.5 10.5 10.5C10.85 10.5 11.19 10.45 11.5 10.36V7.5Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         Sleep Inactive Tabs
@@ -91,9 +96,8 @@
       </div>
 
       <div class="slider-row" id="sliderRow">
-        <label class="slider-label" for="sleepTimer">
-          Sleep after
-          <span id="timerValue">15</span> min
+        <label class="slider-label">
+          Sleep tabs after <span id="timerValue">15</span> min of inactivity
         </label>
         <input
           type="range"
