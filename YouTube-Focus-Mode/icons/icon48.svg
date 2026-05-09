@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <radialGradient id="glow48" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff4e4e" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#ff4e4e" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bg48" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1e2e"/>
+      <stop offset="100%" stop-color="#12121a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="48" height="48" rx="12" fill="url(#bg48)"/>
+  <rect x="1" y="1" width="46" height="46" rx="11" stroke="#ff4e4e" stroke-width="1" fill="none" opacity="0.3"/>
+
+  <!-- Glow -->
+  <circle cx="24" cy="24" r="20" fill="url(#glow48)"/>
+
+  <!-- Corner brackets -->
+  <path d="M8 16V8h8"  stroke="#ff4e4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M32 8h8v8" stroke="#ff4e4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M40 32v8h-8" stroke="#ff4e4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16 40H8v-8"  stroke="#ff4e4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Eye outline -->
+  <path d="M12 24c3.2-6 6.5-8 12-8s8.8 2 12 8c-3.2 6-6.5 8-12 8s-8.8-2-12-8z"
+        fill="#ff4e4e" opacity="0.15" stroke="#ff4e4e" stroke-width="1.4"/>
+
+  <!-- Iris -->
+  <circle cx="24" cy="24" r="5" fill="#ff4e4e" opacity="0.9"/>
+  <!-- Pupil -->
+  <circle cx="24" cy="24" r="2.2" fill="#12121a"/>
+  <!-- Specular -->
+  <circle cx="26" cy="22.5" r="1" fill="white" opacity="0.7"/>
+
+  <!-- Small tick mark — "focus confirmed" -->
+  <path d="M19 36l2.5 2.5L28 32" stroke="#34d399" stroke-width="1.8"
+        stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+</svg>

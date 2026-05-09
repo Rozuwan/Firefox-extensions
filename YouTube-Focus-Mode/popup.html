@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Focus Mode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────── -->
+  <header class="popup-header">
+    <div class="header-logo">
+      <img src="icons/icon48.svg" alt="Focus Mode Icon" width="28" height="28" />
+      <div class="header-text">
+        <span class="header-title">Focus Mode</span>
+        <span class="header-sub">YouTube</span>
+      </div>
+    </div>
+    <label class="master-switch" for="master-enabled" title="Enable / Disable Focus Mode">
+      <span class="master-label" id="master-label">ON</span>
+      <div class="master-track">
+        <input type="checkbox" id="master-enabled" checked />
+        <span class="master-thumb"></span>
+      </div>
+    </label>
+  </header>
+
+  <!-- ── Divider ────────────────────────────── -->
+  <div class="divider"></div>
+
+  <!-- ── Toggle List ───────────────────────── -->
+  <main class="popup-main">
+    <p class="section-label">FOCUS FILTERS</p>
+
+    <ul class="toggle-list" role="list">
+
+      <!-- Hide Shorts -->
+      <li class="toggle-item" id="item-hideShorts">
+        <div class="toggle-info">
+          <span class="toggle-icon">
+            <!-- Shorts / Reel icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+              <path d="M17.77 10.32l-1.2-.5L18 9.06c1.84-.96 2.53-3.23 1.56-5.06s-3.23-2.53-5.06-1.56L6 6.94c-1.29.68-2.06 2.03-1.98 3.46.03.6.22 1.18.56 1.69L3.38 13.5C2.09 14.2 1.32 15.57 1.32 17c0 2.21 1.79 4 4 4 .75 0 1.45-.22 2.06-.58L19 13.56c1.29-.68 2.06-2.04 1.98-3.47-.07-1.2-.75-2.26-1.78-2.87zM13 3.5c.83 0 1.5.67 1.5 1.5S13.83 6.5 13 6.5 11.5 5.83 11.5 5s.67-1.5 1.5-1.5zm-7.68 14c-.41.26-.87.4-1.32.4-.83 0-1.5-.67-1.5-1.5 0-.59.33-1.12.85-1.4L14.5 9.46l1.2.5-9.82 5.16c-.2.1-.37.24-.49.41-.32.44-.36 1-.11 1.47.39.75 1.32 1.04 2.07.65L18.5 12l.28.53L7.5 17.21c-.69.36-1.51.22-2.08-.29-.19-.17-.37-.37-.1-.42zm13.5-4.76L7.75 18.26c.48-.25 1-.38 1.53-.38.45 0 .9.1 1.32.31l7.57-3.97 1.2-.63c.77-.4 1.26-1.19 1.26-2.06 0-1.28-1.04-2.32-2.32-2.32-.3 0-.58.06-.84.16l.35-.17z"/>
+            </svg>
+          </span>
+          <div>
+            <span class="toggle-label">Hide Shorts</span>
+            <span class="toggle-desc">Removes Shorts from sidebar, home &amp; search</span>
+          </div>
+        </div>
+        <label class="switch" aria-label="Toggle Hide Shorts">
+          <input type="checkbox" id="toggle-hideShorts" />
+          <span class="slider"></span>
+        </label>
+      </li>
+
+      <!-- Hide Recommendations -->
+      <li class="toggle-item" id="item-hideRecommendations">
+        <div class="toggle-info">
+          <span class="toggle-icon">
+            <!-- Sidebar / panel icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+              <path d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zM3 9h2V7H3v2zm10-6h-2v2h2V3zm6 0v2h2c0-1.1-.9-2-2-2zM5 21v-2H3c0 1.1.9 2 2 2zm-2-4h2v-2H3v2zM9 3H7v2h2V3zm2 18h2v-2h-2v2zm8-8h2v-2h-2v2zm0 8c1.1 0 2-.9 2-2h-2v2zm0-12h2V7h-2v2zm0 8h2v-2h-2v2zm-4 4h2v-2h-2v2zm0-16h2V3h-2v2z"/>
+            </svg>
+          </span>
+          <div>
+            <span class="toggle-label">Hide Recommendations</span>
+            <span class="toggle-desc">Hides the right-side video suggestion panel</span>
+          </div>
+        </div>
+        <label class="switch" aria-label="Toggle Hide Recommendations">
+          <input type="checkbox" id="toggle-hideRecommendations" />
+          <span class="slider"></span>
+        </label>
+      </li>
+
+      <!-- Hide Comments -->
+      <li class="toggle-item" id="item-hideComments">
+        <div class="toggle-info">
+          <span class="toggle-icon">
+            <!-- Comment icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+              <path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/>
+            </svg>
+          </span>
+          <div>
+            <span class="toggle-label">Hide Comments</span>
+            <span class="toggle-desc">Collapses the comments section on videos</span>
+          </div>
+        </div>
+        <label class="switch" aria-label="Toggle Hide Comments">
+          <input type="checkbox" id="toggle-hideComments" />
+          <span class="slider"></span>
+        </label>
+      </li>
+
+
+    </ul>
+  </main>
+
+  <!-- ── Divider ────────────────────────────── -->
+  <div class="divider"></div>
+
+  <!-- ── Footer ────────────────────────────── -->
+  <footer class="popup-footer">
+    <span class="footer-tip">💡 Changes apply instantly on YouTube</span>
+    <button id="btn-reset" class="btn-reset" title="Reset all toggles to defaults">Reset</button>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

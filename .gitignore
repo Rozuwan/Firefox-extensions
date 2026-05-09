@@ -1,0 +1,22 @@
+# Build outputs
+*.zip
+*.xpi
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (if used)
+node_modules/
+package-lock.json
+
+# Debug logs
+*.log
