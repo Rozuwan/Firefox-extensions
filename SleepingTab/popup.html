@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SleepingTab</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-icon" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <path d="M12 8C12 10.761 9.761 13 7 13C4.239 13 2 10.761 2 8C2 5.239 4.239 3 7 3C7.367 3 7.724 3.04 8.066 3.117C6.933 3.842 6.2 5.115 6.2 6.56C6.2 8.845 8.055 10.7 10.34 10.7C10.916 10.7 11.465 10.581 12 10.37V8Z"
+            stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1 class="header-title">SleepingTab</h1>
+      <div class="header-status">
+        <span class="status-dot" id="statusDot"></span>
+        <span>Live</span>
+      </div>
+    </header>
+
+    <!-- Metric Cards: Open · Sleeping · Idle · Peak -->
+    <section class="metrics" aria-label="Tab metrics" aria-live="polite" aria-atomic="true">
+      <div class="metric-card" id="cardCurrent">
+        <span class="metric-value" id="metricCurrent">—</span>
+        <span class="metric-label">Open</span>
+      </div>
+      <div class="metric-card metric-card--hi" id="cardSleeping">
+        <span class="metric-value" id="metricSleeping">—</span>
+        <span class="metric-label">Sleep</span>
+      </div>
+      <div class="metric-card" id="cardIdle">
+        <span class="metric-value" id="metricIdle">—</span>
+        <span class="metric-label">Idle</span>
+      </div>
+      <div class="metric-card" id="cardSaved">
+        <span class="metric-value" id="metricSaved">—</span>
+        <span class="metric-label">Saved</span>
+      </div>
+    </section>
+
+    <!-- Graph -->
+    <section class="graph-section" aria-label="Tab activity graph">
+      <div class="graph-header">
+        <span class="graph-title">Activity</span>
+        <span class="graph-scale" id="graphScale">0 tabs</span>
+      </div>
+      <canvas id="tabGraph" aria-label="Tab count over the last 60 seconds"></canvas>
+      <div class="graph-axis">
+        <span>60s ago</span>
+        <span>now</span>
+      </div>
+    </section>
+
+    <!-- Recent Tabs -->
+    <section class="tabs-section" aria-label="Recent tabs">
+      <div class="section-header">
+        <span class="section-title">Recent Tabs</span>
+        <span class="tab-count-badge" id="tabCountBadge">0</span>
+      </div>
+      <ul class="tab-list" id="tabList" role="list">
+        <li class="tab-placeholder">Loading…</li>
+      </ul>
+    </section>
+
+    <!-- Sleep Button -->
+    <button class="btn-primary" id="btnSleep" type="button">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M11.5 7.5C11.5 10.261 9.261 12.5 6.5 12.5C3.739 12.5 1.5 10.261 1.5 7.5C1.5 4.739 3.739 2.5 6.5 2.5C7.17 2.5 7.81 2.63 8.4 2.87C7.22 3.63 6.5 4.98 6.5 6.5C6.5 8.71 8.29 10.5 10.5 10.5C10.85 10.5 11.19 10.45 11.5 10.36V7.5Z"
+          stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span id="btnSleepLabel">Sleep Inactive Tabs</span>
+    </button>
+
+    <!-- Settings -->
+    <section class="settings-section" aria-label="Auto-sleep settings">
+
+      <!-- Auto-Sleep Toggle -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="setting-name">Auto-Sleep</span>
+          <span class="setting-desc" id="autoSleepDesc">Disabled</span>
+        </div>
+        <label class="toggle" for="autoSleepToggle" aria-label="Enable auto-sleep">
+          <input type="checkbox" id="autoSleepToggle" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+
+      <!-- Threshold Slider (hidden when disabled) -->
+      <div class="slider-group hidden" id="sliderGroup">
+        <div class="slider-header">
+          <span class="slider-label">Inactivity threshold</span>
+          <span class="slider-value"><span id="timerValue">15</span><span class="slider-unit">m</span></span>
+        </div>
+        <input
+          type="range"
+          id="sleepTimer"
+          min="5" max="60" value="15" step="5"
+          class="slider"
+          aria-label="Auto-sleep inactivity threshold in minutes"
+        />
+        <div class="slider-marks">
+          <span>5m</span>
+          <span>30m</span>
+          <span>60m</span>
+        </div>
+      </div>
+
+      <!-- Ignore Rules (hidden when disabled) -->
+      <div class="ignore-rules hidden" id="ignoreRules">
+        <label class="check-row" for="ignorePinned">
+          <input type="checkbox" id="ignorePinned" checked />
+          <span>Skip pinned</span>
+        </label>
+        <label class="check-row" for="ignoreAudio">
+          <input type="checkbox" id="ignoreAudio" checked />
+          <span>Skip audio</span>
+        </label>
+      </div>
+
+      <!-- Whitelist Rules (hidden when disabled) -->
+      <div class="whitelist-group hidden" id="whitelistGroup">
+        <label for="whitelistInput" class="whitelist-label">Exclude Domains</label>
+        <input
+          type="text"
+          id="whitelistInput"
+          placeholder="e.g., gmail.com, github.com"
+          class="whitelist-input"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+
+    </section>
+
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

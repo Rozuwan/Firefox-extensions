@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "SleepingTab",
+  "version": "1.2.0",
+  "description": "Lightweight tab sleep and activity manager for a faster, cleaner browser.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "tabmonitor@roxu.dev",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ],
+        "optional": []
+      }
+    }
+  },
+  "permissions": [
+    "tabs",
+    "storage",
+    "alarms"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "background": {
+    "scripts": ["background.js"],
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "SleepingTab",
+    "default_icon": {
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

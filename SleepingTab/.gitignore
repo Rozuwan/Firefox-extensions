@@ -1,0 +1,26 @@
+# Firefox Extension
+*.xpi
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Temporary
+*.tmp
+
+# Environment Secrets
+.env
+.env.*
+
+# Build Outputs
+web-ext-artifacts/
