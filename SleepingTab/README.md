@@ -9,7 +9,6 @@
 </p>
 
 <p align="center">
-  <img src="screenshot2.png" width="48%" alt="SleepingTab Exclusions View" />
   <img src="screenshot.png" width="48%" alt="SleepingTab Dashboard View" />
 </p>
 
@@ -109,6 +108,6 @@ The project is configured for automated packaging and signing via Mozilla's `web
 
 ---
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
