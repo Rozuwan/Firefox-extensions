@@ -19,7 +19,7 @@
 
 * **Instant Graph Rendering** — Displays tab count history instantly when opened. It leverages `storage.session` to render state timelines with **0ms latency** (no "Gathering data..." delay).
 * **RAM Savings Tracker** — Automatically computes and displays estimated system memory saved (e.g. `1.2 GB Saved`) by monitoring discarded tabs.
-* **Smart Auto-Sleep** — Configurable timer to sleep inactive tabs. Uses **dynamic background alarm frequencies** (checking every 5 to 15 minutes depending on your threshold) to reduce CPU wakeups by up to 93%.
+* **Smart Auto-Sleep** — Configurable timer to sleep inactive tabs. Uses **battery-optimized alarm frequencies** (matching your inactivity threshold, minimum 5 minutes) to keep background CPU wakeups to an absolute minimum.
 * **Exclusion Rules & Whitelisting** — Prevents sleeping of pinned tabs, tabs playing media/audio, and custom domain exclusions (e.g., `gmail.com`, `slack.com`).
 * **One-Click Manual Sleep** — Discard all background tabs instantly with a single click, respecting all whitelist and ignore settings.
 * **Cyberpunk Dark Aesthetics** — Features a premium, Raycast/Linear-inspired dark interface with glowing indicator accents and tabular-numeric formatting.

@@ -42,8 +42,8 @@ async function initAlarm() {
     await browser.alarms.clear(ALARM_NAME);
 
     if (data.autoSleep) {
-      // Dynamic alarm frequency: sleepMinutes / 3 (clamped between 5 and 15 mins)
-      const period = Math.max(5, Math.min(15, Math.floor(data.sleepMinutes / 3)));
+      // Alarm period matches the sleepMinutes threshold (minimum 5 mins to save battery)
+      const period = Math.max(5, data.sleepMinutes);
       browser.alarms.create(ALARM_NAME, { periodInMinutes: period });
       log(`Auto-sleep active. Alarm scheduled every ${period}m.`);
     } else {
@@ -56,76 +56,46 @@ async function initAlarm() {
 
 // ─── Tab Count Caching ────────────────────────────────────────────────────────
 
-async function getOrSeedCount() {
-  try {
-    const data = await browser.storage.session.get({
-      [CURRENT_KEY]: null,
-      [PEAK_KEY]:    0,
-      [HISTORY_KEY]: []
-    });
+let updateQueue = Promise.resolve();
 
-    if (data[CURRENT_KEY] === null) {
+async function updateTabCache() {
+  updateQueue = updateQueue.then(async () => {
+    try {
       const tabs = await browser.tabs.query({});
       const count = tabs.length;
+
+      const data = await browser.storage.session.get({
+        [PEAK_KEY]:    0,
+        [HISTORY_KEY]: []
+      });
+
       const peak = Math.max(count, data[PEAK_KEY]);
-      const history = data[HISTORY_KEY].length > 0 ? data[HISTORY_KEY] : new Array(30).fill(count);
+      let history = data[HISTORY_KEY];
+      if (history.length === 0) {
+        history = new Array(30).fill(count);
+      } else {
+        history.push(count);
+        if (history.length > 30) history.shift();
+      }
 
       await browser.storage.session.set({
         [CURRENT_KEY]: count,
         [PEAK_KEY]:    peak,
         [HISTORY_KEY]: history
       });
-
-      return { currentTabCount: count, peakTabCount: peak, history };
+    } catch (e) {
+      console.error("[SleepingTab] Error updating tab cache:", e);
     }
-
-    return {
-      currentTabCount: data[CURRENT_KEY],
-      peakTabCount:    data[PEAK_KEY],
-      history:         data[HISTORY_KEY]
-    };
-  } catch (e) {
-    console.error("[SleepingTab] Error seeding counts:", e);
-    return { currentTabCount: 0, peakTabCount: 0, history: [] };
-  }
+  });
+  return updateQueue;
 }
 
-async function handleTabCreated() {
-  try {
-    const data = await getOrSeedCount();
-    const newCount = data.currentTabCount + 1;
-    const newPeak = Math.max(newCount, data.peakTabCount);
-
-    let history = data.history;
-    history.push(newCount);
-    if (history.length > 30) history.shift();
-
-    await browser.storage.session.set({
-      [CURRENT_KEY]: newCount,
-      [PEAK_KEY]:    newPeak,
-      [HISTORY_KEY]: history
-    });
-  } catch (e) {
-    console.error("[SleepingTab] Error handling tab creation:", e);
-  }
+function handleTabCreated() {
+  updateTabCache();
 }
 
-async function handleTabRemoved() {
-  try {
-    const data = await getOrSeedCount();
-    const newCount = Math.max(0, data.currentTabCount - 1);
-
-    let history = data.history;
-    history.push(newCount);
-    if (history.length > 30) history.shift();
-
-    await browser.storage.session.set({
-      [CURRENT_KEY]: newCount,
-      [HISTORY_KEY]: history
-    });
-  } catch (e) {
-    console.error("[SleepingTab] Error handling tab removal:", e);
-  }
+function handleTabRemoved() {
+  updateTabCache();
 }
 
 // ─── Auto Sleep Routine ───────────────────────────────────────────────────────
@@ -196,7 +166,7 @@ browser.storage.onChanged.addListener((changes, area) => {
 // ─── Startup ──────────────────────────────────────────────────────────────────
 
 async function init() {
-  await getOrSeedCount();
+  await updateTabCache();
   await initAlarm();
 }
 

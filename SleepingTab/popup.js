@@ -186,6 +186,7 @@ async function renderTabList(tabs) {
     const li = document.createElement("li");
     li.className = "tab-item";
     li.setAttribute("role", "listitem");
+    li.addEventListener("click", () => {
       browser.tabs.update(tab.id, { active: true });
       browser.windows.update(tab.windowId, { focused: true });
       window.close();
@@ -393,9 +394,10 @@ async function loadSettings() {
       ignoreAudio:  true,
       whitelist:    []
     });
+    const validatedMinutes  = Math.max(5, Math.min(60, parseInt(data.sleepMinutes, 10) || 15));
     autoSleepToggle.checked = data.autoSleep;
-    sleepTimer.value        = data.sleepMinutes;
-    timerValue.textContent  = data.sleepMinutes;
+    sleepTimer.value        = validatedMinutes;
+    timerValue.textContent  = validatedMinutes;
     ignorePinned.checked    = data.ignorePinned;
     ignoreAudio.checked     = data.ignoreAudio;
     whitelistInput.value    = data.whitelist.join(", ");
