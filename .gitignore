@@ -3,6 +3,7 @@
 *.xpi
 dist/
 build/
+web-ext-artifacts/
 
 # IDE
 .idea/
