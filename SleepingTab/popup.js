@@ -186,8 +186,8 @@ async function renderTabList(tabs) {
     const li = document.createElement("li");
     li.className = "tab-item";
     li.setAttribute("role", "listitem");
-    li.addEventListener("click", () => {
       browser.tabs.update(tab.id, { active: true });
+      browser.windows.update(tab.windowId, { focused: true });
       window.close();
     });
 
@@ -326,15 +326,19 @@ async function sleepInactiveTabs() {
       if (data.ignoreAudio  && tab.audible) continue;
 
       if (data.whitelist && data.whitelist.length > 0) {
+        let hostname = "";
         try {
-          const hostname = new URL(tab.url).hostname.toLowerCase();
+          hostname = new URL(tab.url).hostname.toLowerCase();
+        } catch {
+          // Ignore invalid URL formatting
+        }
+        if (hostname) {
           const matches = data.whitelist.some(domain => {
             const clean = domain.trim().toLowerCase();
-            return clean && hostname.includes(clean);
+            if (!clean) return false;
+            return hostname === clean || hostname.endsWith("." + clean);
           });
           if (matches) continue;
-        } catch {
-          // Skip invalid URLs or about: pages in whitelist matching
         }
       }
       toSleep.push(tab);

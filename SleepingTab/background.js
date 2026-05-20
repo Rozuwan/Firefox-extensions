@@ -21,6 +21,15 @@ function getHostname(urlStr) {
   }
 }
 
+const DEBUG = false; // Toggle to true during local development
+
+function log(...args) {
+  if (DEBUG) {
+    console.log("[SleepingTab]", ...args);
+  }
+}
+
+
 // ─── Alarm Setup ──────────────────────────────────────────────────────────────
 
 async function initAlarm() {
@@ -36,9 +45,9 @@ async function initAlarm() {
       // Dynamic alarm frequency: sleepMinutes / 3 (clamped between 5 and 15 mins)
       const period = Math.max(5, Math.min(15, Math.floor(data.sleepMinutes / 3)));
       browser.alarms.create(ALARM_NAME, { periodInMinutes: period });
-      console.log(`[SleepingTab] Auto-sleep active. Alarm scheduled every ${period}m.`);
+      log(`Auto-sleep active. Alarm scheduled every ${period}m.`);
     } else {
-      console.log("[SleepingTab] Auto-sleep disabled. Alarm cleared.");
+      log("Auto-sleep disabled. Alarm cleared.");
     }
   } catch (e) {
     console.error("[SleepingTab] Error setting up alarm:", e);
@@ -147,7 +156,8 @@ async function runAutoSleep() {
         const hostname = getHostname(tab.url);
         const matches = settings.whitelist.some(domain => {
           const clean = domain.trim().toLowerCase();
-          return clean && hostname.includes(clean);
+          if (!clean) return false;
+          return hostname === clean || hostname.endsWith("." + clean);
         });
         if (matches) continue;
       }
@@ -156,7 +166,7 @@ async function runAutoSleep() {
       if (idleTime >= thresholdMs) {
         try {
           await browser.tabs.discard(tab.id);
-          console.log(`[SleepingTab] Discarded idle tab: ${tab.title}`);
+          log(`Discarded idle tab: ${tab.title}`);
         } catch (_) {
           // Ignore failures for active media or active in another window
         }
