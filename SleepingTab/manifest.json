@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SleepingTab",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Lightweight tab sleep and activity manager for a faster, cleaner browser.",
   "browser_specific_settings": {
     "gecko": {

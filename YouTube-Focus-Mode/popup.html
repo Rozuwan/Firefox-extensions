@@ -4,9 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YouTube Focus Mode</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
@@ -32,82 +29,185 @@
   <!-- ── Divider ────────────────────────────── -->
   <div class="divider"></div>
 
-  <!-- ── Toggle List ───────────────────────── -->
-  <main class="popup-main">
-    <p class="section-label">FOCUS FILTERS</p>
+  <!-- ── Scrollable Body Area ───────────────── -->
+  <div class="popup-scroll-container">
+    <main class="popup-main">
+      <p class="section-label">FOCUS FILTERS</p>
 
-    <ul class="toggle-list" role="list">
+      <ul class="toggle-list" role="list">
 
-      <!-- Hide Shorts -->
-      <li class="toggle-item" id="item-hideShorts">
-        <div class="toggle-info">
-          <span class="toggle-icon">
-            <!-- Shorts / Reel icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-              <path d="M17.77 10.32l-1.2-.5L18 9.06c1.84-.96 2.53-3.23 1.56-5.06s-3.23-2.53-5.06-1.56L6 6.94c-1.29.68-2.06 2.03-1.98 3.46.03.6.22 1.18.56 1.69L3.38 13.5C2.09 14.2 1.32 15.57 1.32 17c0 2.21 1.79 4 4 4 .75 0 1.45-.22 2.06-.58L19 13.56c1.29-.68 2.06-2.04 1.98-3.47-.07-1.2-.75-2.26-1.78-2.87zM13 3.5c.83 0 1.5.67 1.5 1.5S13.83 6.5 13 6.5 11.5 5.83 11.5 5s.67-1.5 1.5-1.5zm-7.68 14c-.41.26-.87.4-1.32.4-.83 0-1.5-.67-1.5-1.5 0-.59.33-1.12.85-1.4L14.5 9.46l1.2.5-9.82 5.16c-.2.1-.37.24-.49.41-.32.44-.36 1-.11 1.47.39.75 1.32 1.04 2.07.65L18.5 12l.28.53L7.5 17.21c-.69.36-1.51.22-2.08-.29-.19-.17-.37-.37-.1-.42zm13.5-4.76L7.75 18.26c.48-.25 1-.38 1.53-.38.45 0 .9.1 1.32.31l7.57-3.97 1.2-.63c.77-.4 1.26-1.19 1.26-2.06 0-1.28-1.04-2.32-2.32-2.32-.3 0-.58.06-.84.16l.35-.17z"/>
-            </svg>
-          </span>
-          <div>
-            <span class="toggle-label">Hide Shorts</span>
-            <span class="toggle-desc">Removes Shorts from sidebar, home &amp; search</span>
+        <!-- Hide Shorts -->
+        <li class="toggle-item" id="item-hideShorts">
+          <div class="toggle-info">
+            <span class="toggle-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17.77 10.32l-1.2-.5L18 9.06c1.84-.96 2.53-3.23 1.56-5.06s-3.23-2.53-5.06-1.56L6 6.94c-1.29.68-2.06 2.03-1.98 3.46.03.6.22 1.18.56 1.69L3.38 13.5C2.09 14.2 1.32 15.57 1.32 17c0 2.21 1.79 4 4 4 .75 0 1.45-.22 2.06-.58L19 13.56c1.29-.68 2.06-2.04 1.98-3.47-.07-1.2-.75-2.26-1.78-2.87zm-4.77-6.82c.83 0 1.5.67 1.5 1.5S13.83 6.5 13 6.5 11.5 5.83 11.5 5s.67-1.5 1.5-1.5zm-7.68 14c-.41.26-.87.4-1.32.4-.83 0-1.5-.67-1.5-1.5 0-.59.33-1.12.85-1.4L14.5 9.46l1.2.5-9.82 5.16c-.2.1-.37.24-.49.41-.32.44-.36 1-.11 1.47.39.75 1.32 1.04 2.07.65L18.5 12l.28.53L7.5 17.21c-.69.36-1.51.22-2.08-.29-.19-.17-.37-.37-.1-.42zm13.5-4.76L7.75 18.26c.48-.25 1-.38 1.53-.38.45 0 .9.1 1.32.31l7.57-3.97 1.2-.63c.77-.4 1.26-1.19 1.26-2.06 0-1.28-1.04-2.32-2.32-2.32-.3 0-.58.06-.84.16l.35-.17z"/></svg>
+            </span>
+            <div>
+              <span class="toggle-label">Hide Shorts</span>
+              <span class="toggle-desc">Removes Shorts from sidebar and home</span>
+            </div>
+          </div>
+          <label class="switch" aria-label="Toggle Hide Shorts">
+            <input type="checkbox" id="toggle-hideShorts" />
+            <span class="slider"></span>
+          </label>
+        </li>
+
+        <!-- Hide Shorts in Search -->
+        <li class="toggle-item" id="item-hideShortsInSearch">
+          <div class="toggle-info">
+            <span class="toggle-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            </span>
+            <div>
+              <span class="toggle-label">Hide Shorts in Search</span>
+              <span class="toggle-desc">Removes Shorts shelves and results from Search</span>
+            </div>
+          </div>
+          <label class="switch" aria-label="Toggle Hide Shorts in Search">
+            <input type="checkbox" id="toggle-hideShortsInSearch" />
+            <span class="slider"></span>
+          </label>
+        </li>
+
+        <!-- Hide Homepage Feed -->
+        <li class="toggle-item" id="item-hideHomepageFeed">
+          <div class="toggle-info">
+            <span class="toggle-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            </span>
+            <div>
+              <span class="toggle-label">Hide Homepage Feed</span>
+              <span class="toggle-desc">Removes the main video feed from home</span>
+            </div>
+          </div>
+          <label class="switch" aria-label="Toggle Hide Homepage Feed">
+            <input type="checkbox" id="toggle-hideHomepageFeed" />
+            <span class="slider"></span>
+          </label>
+        </li>
+
+        <!-- Hide Sidebar -->
+        <li class="toggle-item" id="item-hideSidebar">
+          <div class="toggle-info">
+            <span class="toggle-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 16H5V5h9v14zm5 0h-3V5h3v14z"/></svg>
+            </span>
+            <div>
+              <span class="toggle-label">Hide Sidebar</span>
+              <span class="toggle-desc">Hides the watch page recommended videos</span>
+            </div>
+          </div>
+          <label class="switch" aria-label="Toggle Hide Sidebar">
+            <input type="checkbox" id="toggle-hideSidebar" />
+            <span class="slider"></span>
+          </label>
+        </li>
+
+        <!-- Hide Comments -->
+        <li class="toggle-item" id="item-hideComments">
+          <div class="toggle-info">
+            <span class="toggle-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg>
+            </span>
+            <div>
+              <span class="toggle-label">Hide Comments</span>
+              <span class="toggle-desc">Collapses the comments section on video pages</span>
+            </div>
+          </div>
+          <label class="switch" aria-label="Toggle Hide Comments">
+            <input type="checkbox" id="toggle-hideComments" />
+            <span class="slider"></span>
+          </label>
+        </li>
+
+        <!-- Hide Endcards -->
+        <li class="toggle-item" id="item-hideEndcards">
+          <div class="toggle-info">
+            <span class="toggle-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4.81 9l-3.5-3.5L9.28 10l2.91 2.91L9.28 15.82l1.41 1.41 3.5-3.5a.996.996 0 0 0 0-1.41z"/></svg>
+            </span>
+            <div>
+              <span class="toggle-label">Hide Endcards</span>
+              <span class="toggle-desc">Hides overlay video cards at the end of videos</span>
+            </div>
+          </div>
+          <label class="switch" aria-label="Toggle Hide Endcards">
+            <input type="checkbox" id="toggle-hideEndcards" />
+            <span class="slider"></span>
+          </label>
+        </li>
+
+        <!-- Hide Merch -->
+        <li class="toggle-item" id="item-hideMerch">
+          <div class="toggle-info">
+            <span class="toggle-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17.21 9l-4.38-6.56c-.19-.28-.51-.44-.83-.44-.32 0-.64.16-.83.44L6.79 9H2v2h2v9c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-9h2V9h-4.79zM9 9l3-4.5L15 9H9zm9 11H6v-9h12v9z"/><circle cx="9" cy="14" r="1.5"/><circle cx="15" cy="14" r="1.5"/></svg>
+            </span>
+            <div>
+              <span class="toggle-label">Hide Merch Shelves</span>
+              <span class="toggle-desc">Hides YouTube merchandise and shop shelves</span>
+            </div>
+          </div>
+          <label class="switch" aria-label="Toggle Hide Merch">
+            <input type="checkbox" id="toggle-hideMerch" />
+            <span class="slider"></span>
+          </label>
+        </li>
+
+        <!-- Hide Notification Bell -->
+        <li class="toggle-item" id="item-hideNotificationBell">
+          <div class="toggle-info">
+            <span class="toggle-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+            </span>
+            <div>
+              <span class="toggle-label">Hide Notification Bell</span>
+              <span class="toggle-desc">Hides subscribe bell indicators on channel pages</span>
+            </div>
+          </div>
+          <label class="switch" aria-label="Toggle Hide Notification Bell">
+            <input type="checkbox" id="toggle-hideNotificationBell" />
+            <span class="slider"></span>
+          </label>
+        </li>
+
+
+      </ul>
+
+      <!-- ── Divider ────────────────────────────── -->
+      <div class="main-divider"></div>
+
+      <!-- ── Session Limit Dropdown ─────────────── -->
+      <div class="control-group">
+        <label for="watch-limit" class="section-label">DAILY WATCH LIMIT</label>
+        <div class="select-wrapper">
+          <select id="watch-limit">
+            <option value="0">No limit</option>
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="60">60 minutes</option>
+            <option value="90">90 minutes</option>
+          </select>
+          <div class="select-arrow">
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l4 4 4-4"/></svg>
           </div>
         </div>
-        <label class="switch" aria-label="Toggle Hide Shorts">
-          <input type="checkbox" id="toggle-hideShorts" />
-          <span class="slider"></span>
-        </label>
-      </li>
-
-      <!-- Hide Recommendations -->
-      <li class="toggle-item" id="item-hideRecommendations">
-        <div class="toggle-info">
-          <span class="toggle-icon">
-            <!-- Sidebar / panel icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-              <path d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zM3 9h2V7H3v2zm10-6h-2v2h2V3zm6 0v2h2c0-1.1-.9-2-2-2zM5 21v-2H3c0 1.1.9 2 2 2zm-2-4h2v-2H3v2zM9 3H7v2h2V3zm2 18h2v-2h-2v2zm8-8h2v-2h-2v2zm0 8c1.1 0 2-.9 2-2h-2v2zm0-12h2V7h-2v2zm0 8h2v-2h-2v2zm-4 4h2v-2h-2v2zm0-16h2V3h-2v2z"/>
-            </svg>
-          </span>
-          <div>
-            <span class="toggle-label">Hide Recommendations</span>
-            <span class="toggle-desc">Hides the right-side video suggestion panel</span>
-          </div>
-        </div>
-        <label class="switch" aria-label="Toggle Hide Recommendations">
-          <input type="checkbox" id="toggle-hideRecommendations" />
-          <span class="slider"></span>
-        </label>
-      </li>
-
-      <!-- Hide Comments -->
-      <li class="toggle-item" id="item-hideComments">
-        <div class="toggle-info">
-          <span class="toggle-icon">
-            <!-- Comment icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-              <path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/>
-            </svg>
-          </span>
-          <div>
-            <span class="toggle-label">Hide Comments</span>
-            <span class="toggle-desc">Collapses the comments section on videos</span>
-          </div>
-        </div>
-        <label class="switch" aria-label="Toggle Hide Comments">
-          <input type="checkbox" id="toggle-hideComments" />
-          <span class="slider"></span>
-        </label>
-      </li>
+        <div id="timer-status" class="timer-status">Tracked watch time: 0m</div>
+      </div>
 
 
-    </ul>
-  </main>
+
+    </main>
+  </div>
 
   <!-- ── Divider ────────────────────────────── -->
   <div class="divider"></div>
 
   <!-- ── Footer ────────────────────────────── -->
   <footer class="popup-footer">
-    <span class="footer-tip">💡 Changes apply instantly on YouTube</span>
+    <span class="footer-tip">Changes apply instantly on YouTube</span>
     <button id="btn-reset" class="btn-reset" title="Reset all toggles to defaults">Reset</button>
   </footer>
 

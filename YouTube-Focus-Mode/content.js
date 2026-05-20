@@ -1,57 +1,245 @@
 /* ============================================================
    YouTube Focus Mode — Content Script
-   Reads masterEnabled + individual toggles from storage.
-   If masterEnabled is false, all injected CSS is stripped out.
+   Controls dynamic page hiding, whitelisting, auto-theater mode,
+   custom CSS injection, and daily watch limit overlays.
    ============================================================ */
 
 (function () {
-  'use strict';
+  "use strict";
 
-  const STYLE_ID = '__yfm_styles__';
+  const STYLE_ID = "__yfm_styles__";
+  const OVERLAY_ID = "ytfm-limit-overlay";
 
   const DEFAULTS = {
     masterEnabled: true,
     hideShorts: true,
-    hideRecommendations: true,
-    hideComments: true
+    hideShortsInSearch: true,
+    hideHomepageFeed: false,
+    hideComments: false,
+    hideSidebar: true,
+    hideEndcards: false,
+    hideMerch: false,
+    hideNotificationBell: false,
+    watchLimitMinutes: 0,
   };
 
-  // ── Selector banks grouped by feature ─────────────────────
   const SELECTORS = {
     hideShorts: [
-      'ytd-guide-entry-renderer a[title="Shorts"]',
-      'ytd-mini-guide-entry-renderer[aria-label="Shorts"]',
-      'ytd-rich-shelf-renderer[is-shorts]',
+      'ytd-guide-entry-renderer a[href="/shorts"]',
+      'ytd-mini-guide-entry-renderer a[href="/shorts"]',
+      "ytd-rich-shelf-renderer[is-shorts]",
       'ytd-rich-shelf-renderer[feature="SHORTS"]',
-      'ytd-reel-shelf-renderer',
-      'ytd-shelf-renderer:has(ytd-reel-item-renderer)',
-      '#related ytd-reel-shelf-renderer',
-      'ytd-rich-item-renderer:has(ytd-rich-grid-slim-media[is-short])',
+      "ytd-reel-shelf-renderer",
+      "ytd-shelf-renderer:has(ytd-reel-item-renderer)",
+      "#related ytd-reel-shelf-renderer",
+      "ytd-rich-item-renderer:has(ytd-rich-grid-slim-media[is-short])",
       'ytd-rich-item-renderer:has(a[href*="/shorts/"])',
-      'yt-chip-cloud-chip-renderer:has(yt-formatted-string[title="Shorts"])'
+      'yt-chip-cloud-chip-renderer:has(a[href="/shorts"])',
     ],
-    hideRecommendations: [
-      '#secondary',
-      '#related',
-      'ytd-watch-next-secondary-results-renderer'
+    hideShortsInSearch: [
+      'ytd-video-renderer:has(a[href*="/shorts/"])',
+      "ytd-reel-item-renderer",
+      "ytd-reel-shelf-renderer",
+      "ytd-rich-shelf-renderer[is-shorts]",
+      'ytd-shelf-renderer:has(a[href*="/shorts/"])',
     ],
-    hideComments: [
-      '#comments',
-      'ytd-comments#comments'
-    ]
+    hideHomepageFeed: ["#contents", "ytd-rich-grid-renderer"],
+    hideComments: ["#comments", "ytd-comments#comments"],
+    hideSidebar: [
+      "#secondary",
+      "#related",
+      "ytd-watch-next-secondary-results-renderer",
+    ],
+    hideEndcards: [
+      ".ytp-ce-element",
+      ".ytp-ce-cover-image",
+      ".ytp-ce-video",
+      ".ytp-ce-playlist",
+      ".ytp-ce-channel",
+    ],
+    hideMerch: [
+      "ytd-merch-shelf-renderer",
+      ".ytd-merch-shelf-renderer",
+      "#merch-shelf",
+    ],
+    hideNotificationBell: [
+      "ytd-notification-toggle-button-renderer",
+      "#notification-preference-button",
+      ".ytd-notification-toggle-button-renderer",
+    ],
   };
 
-  // ── Build CSS from current settings ───────────────────────
+  let observer = null;
+  let currentSettings = null;
+  let lastCheckedVideoId = "";
+  let enforceLimitInterval = null;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ── Focus Limit Overlay & Active Play Enforcer ──────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  function checkFocusLimit() {
+    if (
+      !currentSettings ||
+      !currentSettings.masterEnabled ||
+      !currentSettings.watchLimitMinutes
+    ) {
+      removeLimitOverlay();
+      return;
+    }
+
+    browser.storage.local.get(
+      ["secondsWatchedToday", "snoozedToday", "snoozeExpiryTime"],
+      (localData) => {
+        const limitSeconds = currentSettings.watchLimitMinutes * 60;
+        const secondsToday = localData.secondsWatchedToday || 0;
+        const isSnoozed = !!localData.snoozedToday;
+        const snoozeExpiry = localData.snoozeExpiryTime || 0;
+
+        if (secondsToday >= limitSeconds) {
+          if (isSnoozed) {
+            if (Date.now() < snoozeExpiry) {
+              // Under snooze period, do not overlay
+              removeLimitOverlay();
+              return;
+            } else {
+              // Snooze expired, show strict overlay with no snooze button
+              injectLimitOverlay(true);
+            }
+          } else {
+            // Limit hit, first time, show overlay with snooze button
+            injectLimitOverlay(false);
+          }
+        } else {
+          removeLimitOverlay();
+        }
+      },
+    );
+  }
+
+  function injectLimitOverlay(snoozeUsed) {
+    // Only overlay the video player to keep it non-blocking on the page layout
+    const playerEl =
+      document.getElementById("movie_player") ||
+      document.querySelector(".html5-video-player");
+    if (!playerEl) return;
+
+    // Pause the video actively
+    const video = playerEl.querySelector("video");
+    if (video && !video.paused) {
+      video.pause();
+    }
+
+    if (document.getElementById(OVERLAY_ID)) {
+      // Overlay exists, update state of snooze button if expired
+      const snoozeBtn = document.getElementById("ytfm-btn-snooze");
+      if (snoozeBtn && snoozeUsed) {
+        snoozeBtn.disabled = true;
+        snoozeBtn.style.opacity = "0.35";
+        snoozeBtn.textContent = "Snooze Limit Reached";
+      }
+      return;
+    }
+
+    const overlay = document.createElement("div");
+    overlay.id = OVERLAY_ID;
+
+    const style = document.createElement("style");
+    style.textContent = `#${OVERLAY_ID} { position: absolute; inset: 0; z-index: 2147483647; background: rgba(10, 10, 15, 0.72); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: center; font-family: "Inter", system-ui, sans-serif; color: #f0f0f5; } .yfm-limit-card { text-align: center; padding: 30px; background: rgba(24, 24, 31, 0.9); border: 1px solid rgba(255, 78, 78, 0.25); box-shadow: 0 0 30px rgba(255, 78, 78, 0.15); border-radius: 16px; max-width: 380px; width: 90%; } .yfm-limit-icon { font-size: 32px; margin-bottom: 12px; } .yfm-limit-card h2 { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #f0f0f5; letter-spacing: -0.3px; } .yfm-limit-card p { font-size: 13px; color: #9090a8; margin-bottom: 24px; line-height: 1.5; } .yfm-limit-btns { display: flex; gap: 12px; justify-content: center; } .yfm-limit-btn { font-size: 13px; font-weight: 600; padding: 8px 18px; border-radius: 20px; cursor: pointer; transition: 0.2s; border: none; font-family: inherit; } .yfm-btn-break { background: #ff4e4e; color: #ffffff; box-shadow: 0 0 10px rgba(255, 78, 78, 0.25); } .yfm-btn-break:hover { background: #ff3838; box-shadow: 0 0 15px rgba(255, 78, 78, 0.35); } .yfm-btn-snooze { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.08); color: #9090a8; } .yfm-btn-snooze:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); color: #f0f0f5; } .yfm-btn-snooze:disabled { cursor: not-allowed; opacity: 0.35; }`;
+    overlay.appendChild(style);
+
+    const card = document.createElement("div");
+    card.className = "yfm-limit-card";
+
+    const icon = document.createElement("div");
+    icon.className = "yfm-limit-icon";
+    icon.textContent = "🎯";
+
+    const h2 = document.createElement("h2");
+    h2.textContent = "You've hit your focus limit for today";
+
+    const p = document.createElement("p");
+    p.textContent = "Your scheduled screen limit has passed. Taking active breaks keeps your productivity high.";
+
+    const btns = document.createElement("div");
+    btns.className = "yfm-limit-btns";
+
+    const breakBtn = document.createElement("button");
+    breakBtn.id = "ytfm-btn-break";
+    breakBtn.className = "yfm-limit-btn yfm-btn-break";
+    breakBtn.textContent = "Take a break";
+
+    const snoozeBtn = document.createElement("button");
+    snoozeBtn.id = "ytfm-btn-snooze";
+    snoozeBtn.className = "yfm-limit-btn yfm-btn-snooze";
+    snoozeBtn.textContent = snoozeUsed ? "Snooze Limit Reached" : "5 more minutes";
+    if (snoozeUsed) snoozeBtn.disabled = true;
+
+    btns.appendChild(breakBtn);
+    btns.appendChild(snoozeBtn);
+
+    card.appendChild(icon);
+    card.appendChild(h2);
+    card.appendChild(p);
+    card.appendChild(btns);
+
+    overlay.appendChild(card);
+
+    playerEl.appendChild(overlay);
+
+    breakBtn.addEventListener("click", () => {
+      browser.runtime.sendMessage({ action: "closeTab" });
+    });
+    if (snoozeBtn) {
+      snoozeBtn.addEventListener("click", () => {
+        const fiveMinutesMs = 5 * 60 * 1000;
+        browser.storage.local.set(
+          {
+            snoozedToday: true,
+            snoozeExpiryTime: Date.now() + fiveMinutesMs,
+          },
+          () => {
+            removeLimitOverlay();
+          },
+        );
+      });
+    }
+
+    // Keep active check interval to enforce pause when overlay is active
+    if (!enforceLimitInterval) {
+      enforceLimitInterval = setInterval(() => {
+        const v = playerEl.querySelector("video");
+        if (v && !v.paused && document.getElementById(OVERLAY_ID)) {
+          v.pause();
+        }
+      }, 250);
+    }
+  }
+
+  function removeLimitOverlay() {
+    const overlay = document.getElementById(OVERLAY_ID);
+    if (overlay) overlay.remove();
+    if (enforceLimitInterval) {
+      clearInterval(enforceLimitInterval);
+      enforceLimitInterval = null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ── CSS Hiding Stylesheet Logic ──────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+
   function buildCSS(settings) {
     const rules = [];
 
     for (const [feature, selectors] of Object.entries(SELECTORS)) {
       if (settings[feature]) {
-        rules.push(`${selectors.join(',\n')} { display: none !important; }`);
+        rules.push(`${selectors.join(",\n")} { display: none !important; }`);
       }
     }
 
-    if (settings.hideRecommendations) {
+    // Apply auto-stretching when sidebar recommendations are hidden
+    if (settings.hideSidebar) {
       rules.push(`
         ytd-watch-flexy #primary.ytd-watch-flexy {
           max-width: 100% !important;
@@ -67,49 +255,100 @@
       `);
     }
 
-    return rules.join('\n');
+    return rules.join("\n");
   }
 
-  // ── Inject / remove the <style> tag ───────────────────────
   function applySettings(settings) {
+    currentSettings = settings;
     let el = document.getElementById(STYLE_ID);
 
     if (!settings.masterEnabled) {
-      // Extension disabled — strip all rules
       if (el) el.remove();
+      removeLimitOverlay();
+      stopObserver();
       return;
     }
 
+    // Standard Stylesheet Management
     if (!el) {
-      el = document.createElement('style');
+      el = document.createElement("style");
       el.id = STYLE_ID;
       (document.head || document.documentElement).appendChild(el);
     }
     el.textContent = buildCSS(settings);
+
+    // Active Feature Checks
+    checkFocusLimit();
+    startObserver();
   }
 
-  // ── MutationObserver: keep style tag alive on SPA navigation
-  let observer = null;
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ── MutationObserver (SPA Navigation Friendly) ───────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
 
   function startObserver() {
+    if (!currentSettings || !currentSettings.masterEnabled) {
+      stopObserver();
+      return;
+    }
     if (observer) return;
     observer = new MutationObserver(() => {
-      if (!document.getElementById(STYLE_ID)) {
-        chrome.storage.sync.get(DEFAULTS, applySettings);
+      if (currentSettings) {
+        if (currentSettings.masterEnabled) {
+          if (!document.getElementById(STYLE_ID)) {
+            browser.storage.sync.get(DEFAULTS, applySettings);
+          }
+        }
+
+        checkFocusLimit();
       }
     });
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
   }
 
-  // ── Bootstrap ─────────────────────────────────────────────
-  chrome.storage.sync.get(DEFAULTS, (settings) => {
-    applySettings(settings);
-    startObserver();
+  function stopObserver() {
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ── Storage and Event Synchronizers ──────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  function handleStorageChange(changes, area) {
+    if (area === "sync") {
+      browser.storage.sync.get(DEFAULTS, (settings) => {
+        // Fetch local settings too for timers
+        browser.storage.local.get(
+          ["secondsWatchedToday", "snoozedToday", "snoozeExpiryTime"],
+          (localData) => {
+            applySettings(settings);
+          },
+        );
+      });
+    } else if (area === "local") {
+      // Re-evaluate focus limits immediately on clock updates
+      checkFocusLimit();
+    }
+  }
+
+  // YouTube SPA dynamic page navigation triggers
+  document.addEventListener("yt-navigate-finish", () => {
+    checkFocusLimit();
+    if (currentSettings) {
+      applySettings(currentSettings);
+    }
   });
 
-  // Re-apply whenever any toggle changes in the popup
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'sync') return;
-    chrome.storage.sync.get(DEFAULTS, applySettings);
+  // Startup Initialization
+  browser.storage.sync.get(DEFAULTS, (settings) => {
+    applySettings(settings);
   });
+
+  browser.storage.onChanged.addListener(handleStorageChange);
 })();
