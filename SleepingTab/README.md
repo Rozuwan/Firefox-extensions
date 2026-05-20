@@ -32,7 +32,7 @@ SleepingTab is designed to be completely native, lightweight, and trustworthy:
 * **Zero Telemetry / Zero Tracking** — No data collection, tracking scripts, or analytics.
 * **Zero Remote Code** — 100% self-contained code running locally. Satisfies strict Mozilla Add-on Store policies.
 * **Least Privilege Permissions** — Declares only `tabs`, `storage`, and `alarms` (no `downloads` or hosts permissions).
-* **Gecko Compliant** — Targets Firefox 142+ with full MV3 support.
+* **Gecko Compliant** — Targets Firefox 142+ with full MV3 support and required `data_collection_permissions` metadata.
 
 ---
 
