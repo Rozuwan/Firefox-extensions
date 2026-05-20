@@ -89,19 +89,22 @@ npx web-ext lint --source-dir .
 
 The project is configured for automated packaging and signing via Mozilla's `web-ext` CLI.
 
-1. Copy `.env` to configure your developer keys (ignored by Git):
+### Pre-release Steps
+1. **Toggle Production Logging:** In [background.js](file:///d:/Vibe_Coding/Firefox_Extensions/SleepingTab/background.js), make sure `const DEBUG` is set to `false`. This prevents verbose debug statements from cluttering the user's browser console in production.
+2. **Setup Credentials (for Add-ons Store):** Copy `.env` to configure your developer keys (ignored by Git):
    ```bash
    cp .env.example .env # Or edit the existing .env file
    ```
-2. Retrieve your JWT credentials from the [Mozilla Developer Center](https://addons.mozilla.org/en-US/developers/addon/api/key/).
-3. Run the packaging command to compile a production `.zip`/`.xpi` file:
+   Retrieve your JWT credentials from the [Mozilla Developer Center](https://addons.mozilla.org/en-US/developers/addon/api/key/).
+
+### Packaging & Signing
+3. Run the packaging command to compile a production `.zip`/`.xpi` file. Ensure that development/secret files (like `.env`, `.gitignore`, documentation, and screenshots) are excluded from the bundle:
    ```bash
-   # Package extension
-   npx web-ext build --source-dir . --overwrite-dest
+   npx web-ext build --source-dir . --overwrite-dest --ignore-files .env .gitignore README.md "screenshot*.png"
    ```
 4. Sign the package for self-distribution (optional):
    ```bash
-   npx web-ext sign --api-key=$WEB_EXT_API_KEY --api-secret=$WEB_EXT_API_SECRET
+   npx web-ext sign --api-key=$WEB_EXT_API_KEY --api-secret=$WEB_EXT_API_SECRET --ignore-files .env .gitignore README.md "screenshot*.png"
    ```
 
 ---
