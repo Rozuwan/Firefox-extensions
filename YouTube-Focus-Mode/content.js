@@ -17,6 +17,8 @@
     hideHomepageFeed: false,
     hideComments: false,
     hideSidebar: true,
+    hideLiveChat: false,
+    expandPlayer: true,
     hideEndcards: false,
     hideMerch: false,
     hideNotificationBell: false,
@@ -50,6 +52,10 @@
       "#related",
       "ytd-watch-next-secondary-results-renderer",
     ],
+    hideLiveChat: [
+      "#chat",
+      "ytd-live-chat-frame",
+    ],
     hideEndcards: [
       ".ytp-ce-element",
       ".ytp-ce-cover-image",
@@ -73,6 +79,9 @@
   let currentSettings = null;
   let lastCheckedVideoId = "";
   let enforceLimitInterval = null;
+  let theaterTriggeredForCurrentPage = false;
+  let theaterPlayerObserver = null;  // Fix: module-level ref prevents observer accumulation
+  let theaterSettleTimeout = null;   // Fix: module-level ref prevents timeout accumulation
 
   // ─────────────────────────────────────────────────────────────────────────────
   // ── Focus Limit Overlay & Active Play Enforcer ──────────────────────────────
@@ -226,6 +235,89 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // ── Auto Theater Mode ────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  function tryEnableTheaterMode() {
+    // Guard: only on watch pages, only when expandPlayer is on, only once per navigation
+    if (!location.pathname.startsWith("/watch")) return;
+    if (!currentSettings || !currentSettings.masterEnabled || !currentSettings.expandPlayer) return;
+    if (theaterTriggeredForCurrentPage) return;
+
+    // Fix: never eject the user from fullscreen into theater mode
+    if (document.fullscreenElement) return;
+
+    // Fix: never interfere with an active Mini Player session
+    if (document.querySelector("ytd-miniplayer[active]")) return;
+
+    // Already in theater mode — mark as done and exit
+    if (document.querySelector("ytd-watch-flexy[theater]")) {
+      theaterTriggeredForCurrentPage = true;
+      return;
+    }
+
+    // Fix: clean up any observer/timeout left over from a previous rapid navigation
+    if (theaterPlayerObserver) {
+      theaterPlayerObserver.disconnect();
+      theaterPlayerObserver = null;
+    }
+    if (theaterSettleTimeout) {
+      clearTimeout(theaterSettleTimeout);
+      theaterSettleTimeout = null;
+    }
+
+    // Wait for the theater toggle button using a one-shot MutationObserver
+    let settled = false;
+    const TIMEOUT_MS = 3000;
+
+    function attemptClick() {
+      if (settled) return;
+      // Re-check theater state in case YouTube applied it between observer callbacks
+      if (document.querySelector("ytd-watch-flexy[theater]")) {
+        settled = true;
+        theaterTriggeredForCurrentPage = true;
+        return;
+      }
+      const btn = document.querySelector(".ytp-size-button");
+      if (!btn) return; // Not yet in DOM; observer will retry
+      settled = true;
+      theaterTriggeredForCurrentPage = true;
+      btn.click();
+    }
+
+    theaterPlayerObserver = new MutationObserver(() => {
+      attemptClick();
+      if (settled) {
+        theaterPlayerObserver.disconnect();
+        theaterPlayerObserver = null;
+      }
+    });
+
+    theaterPlayerObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["theater"],
+    });
+
+    // Try immediately in case player is already present
+    attemptClick();
+
+    // Safety cleanup: disconnect observer after timeout regardless
+    theaterSettleTimeout = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        theaterTriggeredForCurrentPage = true; // Prevent further attempts this navigation
+      }
+      if (theaterPlayerObserver) {
+        theaterPlayerObserver.disconnect();
+        theaterPlayerObserver = null;
+      }
+      theaterSettleTimeout = null;
+    }, TIMEOUT_MS);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // ── CSS Hiding Stylesheet Logic ──────────────────────────────────────────────
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -238,8 +330,8 @@
       }
     }
 
-    // Apply auto-stretching when sidebar recommendations are hidden
-    if (settings.hideSidebar) {
+    // Apply auto-stretching when Expand Player is enabled
+    if (settings.expandPlayer) {
       rules.push(`
         ytd-watch-flexy #primary.ytd-watch-flexy {
           max-width: 100% !important;
@@ -339,15 +431,19 @@
 
   // YouTube SPA dynamic page navigation triggers
   document.addEventListener("yt-navigate-finish", () => {
+    // Reset theater trigger flag on every navigation so it fires once per page
+    theaterTriggeredForCurrentPage = false;
     checkFocusLimit();
     if (currentSettings) {
       applySettings(currentSettings);
+      tryEnableTheaterMode();
     }
   });
 
   // Startup Initialization
   browser.storage.sync.get(DEFAULTS, (settings) => {
     applySettings(settings);
+    tryEnableTheaterMode();
   });
 
   browser.storage.onChanged.addListener(handleStorageChange);
