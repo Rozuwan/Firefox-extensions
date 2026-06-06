@@ -45,7 +45,10 @@
       "ytd-rich-shelf-renderer[is-shorts]",
       'ytd-shelf-renderer:has(a[href*="/shorts/"])',
     ],
-    hideHomepageFeed: ["#contents", "ytd-rich-grid-renderer"],
+    hideHomepageFeed: [
+      'ytd-browse[page-subtype="home"] #contents',
+      'ytd-browse[page-subtype="home"] ytd-rich-grid-renderer',
+    ],
     hideComments: ["#comments", "ytd-comments#comments"],
     hideSidebar: [
       "#secondary",
@@ -238,6 +241,26 @@
   // ── Auto Theater Mode ────────────────────────────────────────────────────────
   // ─────────────────────────────────────────────────────────────────────────────
 
+  function isTheaterActive() {
+    const btn = document.querySelector(".ytp-size-button");
+    if (!btn) return false;
+
+    // Check SVG path (locale-independent)
+    const path = btn.querySelector("path");
+    if (path) {
+      const d = path.getAttribute("d") || "";
+      if (d.includes("26")) return true;
+      if (d.includes("28")) return false;
+    }
+
+    // Fallback: Check aria-label / title / data-title-no-tooltip
+    const label = (btn.getAttribute("aria-label") || btn.getAttribute("title") || btn.getAttribute("data-title-no-tooltip") || "").toLowerCase();
+    if (label.includes("default") || label.includes("standard") || label.includes("predeterminada") || label.includes("défaut")) {
+      return true;
+    }
+    return false;
+  }
+
   function tryEnableTheaterMode() {
     // Guard: only on watch pages, only when expandPlayer is on, only once per navigation
     if (!location.pathname.startsWith("/watch")) return;
@@ -251,7 +274,7 @@
     if (document.querySelector("ytd-miniplayer[active]")) return;
 
     // Already in theater mode — mark as done and exit
-    if (document.querySelector("ytd-watch-flexy[theater]")) {
+    if (isTheaterActive()) {
       theaterTriggeredForCurrentPage = true;
       return;
     }
@@ -273,7 +296,7 @@
     function attemptClick() {
       if (settled) return;
       // Re-check theater state in case YouTube applied it between observer callbacks
-      if (document.querySelector("ytd-watch-flexy[theater]")) {
+      if (isTheaterActive()) {
         settled = true;
         theaterTriggeredForCurrentPage = true;
         return;
@@ -297,7 +320,7 @@
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["theater"],
+      attributeFilter: ["theater", "aria-label", "title", "data-title-no-tooltip"],
     });
 
     // Try immediately in case player is already present
@@ -366,97 +389,114 @@
 
     const card = document.createElement("div");
     card.id = CARD_ID;
-    card.innerHTML = `
-      <style>
-        #${CARD_ID} {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          padding: 40px;
-          background: rgba(24, 24, 31, 0.75);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 24px;
-          max-width: 480px;
-          width: 90%;
-          margin: 120px auto;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-          font-family: "Inter", system-ui, -apple-system, sans-serif;
-          color: #f0f0f5;
-          animation: ytfmFadeIn 0.3s ease-out forwards;
-        }
-        
-        @keyframes ytfmFadeIn {
-          from { opacity: 0; transform: translateY(15px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
+    const style = document.createElement("style");
+    style.textContent = `
+      #${CARD_ID} {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px;
+        background: rgba(24, 24, 31, 0.75);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        max-width: 480px;
+        width: 90%;
+        margin: 120px auto;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        color: #f0f0f5;
+        animation: ytfmFadeIn 0.3s ease-out forwards;
+      }
+      
+      @keyframes ytfmFadeIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
 
-        .ytfm-fc-icon {
-          font-size: 48px;
-          margin-bottom: 20px;
-          filter: drop-shadow(0 0 12px rgba(255, 78, 78, 0.3));
-        }
+      .ytfm-fc-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+        filter: drop-shadow(0 0 12px rgba(255, 78, 78, 0.3));
+      }
 
-        .ytfm-fc-title {
-          font-size: 28px;
-          font-weight: 800;
-          margin-bottom: 12px;
-          letter-spacing: -0.5px;
-          background: linear-gradient(135deg, #ffffff 0%, #a5a5b5 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
+      .ytfm-fc-title {
+        font-size: 28px;
+        font-weight: 800;
+        margin-bottom: 12px;
+        letter-spacing: -0.5px;
+        background: linear-gradient(135deg, #ffffff 0%, #a5a5b5 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
 
-        .ytfm-fc-subtitle {
-          font-size: 15px;
-          font-weight: 400;
-          color: #9090a8;
-          margin-bottom: 30px;
-          line-height: 1.6;
-          max-width: 340px;
-        }
+      .ytfm-fc-subtitle {
+        font-size: 15px;
+        font-weight: 400;
+        color: #9090a8;
+        margin-bottom: 30px;
+        line-height: 1.6;
+        max-width: 340px;
+      }
 
-        .ytfm-fc-btn {
-          background: #ff4e4e;
-          color: #ffffff;
-          font-size: 15px;
-          font-weight: 600;
-          padding: 12px 32px;
-          border-radius: 30px;
-          border: none;
-          cursor: pointer;
-          box-shadow: 0 0 15px rgba(255, 78, 78, 0.25);
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          font-family: inherit;
-        }
+      .ytfm-fc-btn {
+        background: #ff4e4e;
+        color: #ffffff;
+        font-size: 15px;
+        font-weight: 600;
+        padding: 12px 32px;
+        border-radius: 30px;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 0 15px rgba(255, 78, 78, 0.25);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        font-family: inherit;
+      }
 
-        .ytfm-fc-btn:hover {
-          background: #ff3333;
-          box-shadow: 0 0 25px rgba(255, 78, 78, 0.45);
-          transform: translateY(-1px);
-        }
+      .ytfm-fc-btn:hover {
+        background: #ff3333;
+        box-shadow: 0 0 25px rgba(255, 78, 78, 0.45);
+        transform: translateY(-1px);
+      }
 
-        .ytfm-fc-btn:active {
-          transform: translateY(1px);
-        }
+      .ytfm-fc-btn:active {
+        transform: translateY(1px);
+      }
 
-        .ytfm-fc-footer {
-          margin-top: 32px;
-          font-size: 11px;
-          color: #55556a;
-          letter-spacing: 0.5px;
-          text-transform: uppercase;
-        }
-      </style>
-      <div class="ytfm-fc-icon">🎯</div>
-      <div class="ytfm-fc-title">Stay Focused</div>
-      <div class="ytfm-fc-subtitle">Search intentionally and watch with purpose.</div>
-      <button class="ytfm-fc-btn" id="ytfm-fc-btn-search">Search YouTube</button>
-      <div class="ytfm-fc-footer">Distractions hidden by YouTube Focus Mode</div>
+      .ytfm-fc-footer {
+        margin-top: 32px;
+        font-size: 11px;
+        color: #55556a;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
     `;
+
+    const iconDiv = document.createElement("div");
+    iconDiv.className = "ytfm-fc-icon";
+    iconDiv.textContent = "🎯";
+
+    const titleDiv = document.createElement("div");
+    titleDiv.className = "ytfm-fc-title";
+    titleDiv.textContent = "Stay Focused";
+
+    const subtitleDiv = document.createElement("div");
+    subtitleDiv.className = "ytfm-fc-subtitle";
+    subtitleDiv.textContent = "Search intentionally and watch with purpose.";
+
+    const searchBtn = document.createElement("button");
+    searchBtn.className = "ytfm-fc-btn";
+    searchBtn.id = "ytfm-fc-btn-search";
+    searchBtn.textContent = "Search YouTube";
+
+    const footerDiv = document.createElement("div");
+    footerDiv.className = "ytfm-fc-footer";
+    footerDiv.textContent = "Distractions hidden by YouTube Focus Mode";
+
+    card.append(style, iconDiv, titleDiv, subtitleDiv, searchBtn, footerDiv);
 
     targetParent.appendChild(card);
 
@@ -522,6 +562,7 @@
     // Active Feature Checks
     checkFocusLimit();
     updateFocusLandingPage();
+    tryEnableTheaterMode();
     startObserver();
   }
 
