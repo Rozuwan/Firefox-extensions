@@ -318,6 +318,155 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // ── Focus Search Landing Page ────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const CARD_ID = "ytfm-focus-card";
+
+  function focusYouTubeSearch() {
+    const searchInput =
+      document.querySelector("input#search") ||
+      document.querySelector("input[name='search_query']");
+    if (searchInput) {
+      searchInput.focus();
+      searchInput.select();
+    }
+  }
+
+  function updateFocusLandingPage() {
+    const shouldShow =
+      currentSettings &&
+      currentSettings.masterEnabled &&
+      currentSettings.hideHomepageFeed &&
+      location.pathname === "/";
+
+    const existingCard = document.getElementById(CARD_ID);
+
+    if (!shouldShow) {
+      if (existingCard) {
+        existingCard.remove();
+      }
+      return;
+    }
+
+    if (existingCard) {
+      const targetParent =
+        document.querySelector('ytd-browse[page-subtype="home"] #primary') ||
+        document.querySelector('ytd-browse[page-subtype="home"]');
+      if (targetParent && existingCard.parentNode !== targetParent) {
+        targetParent.appendChild(existingCard);
+      }
+      return;
+    }
+
+    const targetParent =
+      document.querySelector('ytd-browse[page-subtype="home"] #primary') ||
+      document.querySelector('ytd-browse[page-subtype="home"]');
+    if (!targetParent) return;
+
+    const card = document.createElement("div");
+    card.id = CARD_ID;
+    card.innerHTML = `
+      <style>
+        #${CARD_ID} {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 40px;
+          background: rgba(24, 24, 31, 0.75);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 24px;
+          max-width: 480px;
+          width: 90%;
+          margin: 120px auto;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          font-family: "Inter", system-ui, -apple-system, sans-serif;
+          color: #f0f0f5;
+          animation: ytfmFadeIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes ytfmFadeIn {
+          from { opacity: 0; transform: translateY(15px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ytfm-fc-icon {
+          font-size: 48px;
+          margin-bottom: 20px;
+          filter: drop-shadow(0 0 12px rgba(255, 78, 78, 0.3));
+        }
+
+        .ytfm-fc-title {
+          font-size: 28px;
+          font-weight: 800;
+          margin-bottom: 12px;
+          letter-spacing: -0.5px;
+          background: linear-gradient(135deg, #ffffff 0%, #a5a5b5 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+
+        .ytfm-fc-subtitle {
+          font-size: 15px;
+          font-weight: 400;
+          color: #9090a8;
+          margin-bottom: 30px;
+          line-height: 1.6;
+          max-width: 340px;
+        }
+
+        .ytfm-fc-btn {
+          background: #ff4e4e;
+          color: #ffffff;
+          font-size: 15px;
+          font-weight: 600;
+          padding: 12px 32px;
+          border-radius: 30px;
+          border: none;
+          cursor: pointer;
+          box-shadow: 0 0 15px rgba(255, 78, 78, 0.25);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          font-family: inherit;
+        }
+
+        .ytfm-fc-btn:hover {
+          background: #ff3333;
+          box-shadow: 0 0 25px rgba(255, 78, 78, 0.45);
+          transform: translateY(-1px);
+        }
+
+        .ytfm-fc-btn:active {
+          transform: translateY(1px);
+        }
+
+        .ytfm-fc-footer {
+          margin-top: 32px;
+          font-size: 11px;
+          color: #55556a;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+        }
+      </style>
+      <div class="ytfm-fc-icon">🎯</div>
+      <div class="ytfm-fc-title">Stay Focused</div>
+      <div class="ytfm-fc-subtitle">Search intentionally and watch with purpose.</div>
+      <button class="ytfm-fc-btn" id="ytfm-fc-btn-search">Search YouTube</button>
+      <div class="ytfm-fc-footer">Distractions hidden by YouTube Focus Mode</div>
+    `;
+
+    targetParent.appendChild(card);
+
+    const btn = card.querySelector("#ytfm-fc-btn-search");
+    if (btn) {
+      btn.addEventListener("click", focusYouTubeSearch);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // ── CSS Hiding Stylesheet Logic ──────────────────────────────────────────────
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -358,6 +507,7 @@
       if (el) el.remove();
       removeLimitOverlay();
       stopObserver();
+      updateFocusLandingPage();
       return;
     }
 
@@ -371,6 +521,7 @@
 
     // Active Feature Checks
     checkFocusLimit();
+    updateFocusLandingPage();
     startObserver();
   }
 
@@ -393,6 +544,7 @@
         }
 
         checkFocusLimit();
+        updateFocusLandingPage();
       }
     });
     observer.observe(document.documentElement, {
@@ -437,6 +589,7 @@
     if (currentSettings) {
       applySettings(currentSettings);
       tryEnableTheaterMode();
+      updateFocusLandingPage();
     }
   });
 
